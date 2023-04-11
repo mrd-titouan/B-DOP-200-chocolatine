@@ -1,0 +1,75 @@
+name: Chocolatine Workflow
+
+on:
+  push:
+    branches-ignore:
+      - 'ga-ignore-*'
+  pull_request:
+    branches-ignore:
+      - 'ga-ignore-*'
+
+env:
+  MIRROR_URL: 'git@github.com:EpitechPromo2027/B-DOP-200-NCE-2-1-chocolatine-titouan.morandi.git'
+  EXECUTABLES: 'tmp/gameoflife'
+
+jobs:
+  check_coding_style:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/epitech/coding-style-checker:latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+      - name: Run coding style checker
+        run: check.sh $(pwd) $(pwd)
+      - name: Display coding style errors as error annotations
+        run: |
+          echo "::error file=check_coding_style::Error Message Here"
+      - name: Fail if there are any coding style errors
+        run: exit 1
+
+  check_program_compilation:
+    runs-on: ubuntu-latest
+    container:
+      image: epitechcontent/epitest-docker
+    timeout-minutes: 2
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+      - name: Launch make at the root of the repository
+        run: make
+      - name: Launch make clean at the root of the repository
+        run: make clean
+      - name: Verify existence and executability of executables
+        run: |
+          for executable in $(echo $EXECUTABLES | tr ',' ' '); do
+            if [ ! -x "$executable" ]; then
+              echo "Executable $executable is missing or not executable"
+              exit 1
+            fi
+          done
+
+  run_tests:
+    runs-on: ubuntu-latest
+    container:
+      image: epitechcontent/epitest-docker
+    timeout-minutes: 2
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+      - name: Launch make tests_run at the root of the repository
+        run: make tests_run
+
+  push_to_mirror:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    needs: [check_coding_style, check_program_compilation, run_tests]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+      - name: Mirror to MIRROR_URL
+        uses: pixta-dev/repository-mirroring-action@v1
+        with:
+          ssh_private_key: ${{ secrets.CHOCOLATINE }}
+          source_directory: "."
+          destination_url: ${{ env.MIRROR_URL }}
