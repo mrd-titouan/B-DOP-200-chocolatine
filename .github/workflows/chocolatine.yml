@@ -12,7 +12,7 @@ env:
   MIROR_URL: git@github.com:EpitechPromo2027/B-DOP-200-NCE-2-1-chocolatine-titouan.morandi.git
 
 jobs:
-  checking_the_repository_cleanliness:
+   check_coding_style :
     permissions:
       contents: read
     runs-on: ubuntu-latest
@@ -32,7 +32,7 @@ jobs:
                   exit 1
           fi
   check_program_compilation:
-    needs: checking_the_repository_cleanliness
+    needs:  check_coding_style
     permissions:
       contents: read
     runs-on: ubuntu-latest
@@ -59,21 +59,9 @@ jobs:
               echo "::error file=Makefile,line=1,endLine=1,title=Makefile not found::Makefile not found"
               exit 1
           fi
-      # - name: exec
-      #   run: |
-      #     IFS = ','
-      #     read -a array <<< "$EXECUTABLE"
-      #     for val in "${strarr[@]}"; do
-      #         if find ./ \( -name $val \) -exec false {} +; then
-      #             echo "$val not found"
-      #             exit 1
-      #         else
-      #           echo "$val found"
-      #           exit 0
-      #         fi
 
   run_tests:
-    needs : checking_the_repository_cleanliness
+    needs :  check_coding_style
     permissions:
       contents: read
     runs-on: ubuntu-latest
