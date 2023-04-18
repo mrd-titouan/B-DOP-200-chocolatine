@@ -1,25 +1,108 @@
-name: Chocolatine
+name: chocolatine
 
 on:
   push:
     branches-ignore:
-      - 'ga-ignore-**'
+      - ga-ignore-*
   pull_request:
     branches-ignore:
-      - 'ga-ignore-**'
+      - ga-ignore-*
 
 env:
-  MIROR_URL : git@github.com:EpitechPromo2027/B-DOP-200-NCE-2-1-chocolatine-titouan.morandi.git
+  MIROR_URL: git@github.com:EpitechPromo2027/B-DOP-200-NCE-2-1-chocolatine-titouan.morandi.git
 
 jobs:
-  push_to_mirror:
-    if: github.event_name == 'push'
+  checking_the_repository_cleanliness:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
         with:
-          fetch-depth:  0
+          fetch-depth: 0
+      - id: check-files
+        run: |
+          if find ./ \( -name "#*#" -o -name "*.o" -o -name "*.a" -o -name "*.so" -o -name "*.gcno" -o -name "*.gcda" -o -name "*.gcov" -o -name "*.~" -o -iname "*pain_au_chocolat*" -o -path "*/tmp/*" -type f \) -exec false {} +; then
+              exit 0
+          else
+              files=$(find ./ \( -name "#*#" -o -name "*.o" -o -name "*.a" -o -name "*.so" -o -name "*.gcno" -o -name "*.gcda" -o -name "*.gcov" -o -name "*.~" -o -iname "*pain_au_chocolat*" -o -path "*/tmp/*" -type f \))
+              for file in $files; do
+                  echo "::error file=$file,line=1,endLine=1,title=Unwanted file detected::$file"
+              done
+                  exit 1
+          fi
+  check_program_compilation:
+    needs: checking_the_repository_cleanliness
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    container: epitechcontent/epitest-docker
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: check_timeout
+        run: |
+          if [[ -f ./Makefile ]]; then
+              timeout 2m  make
+              exit 0
+          else
+              echo "::error file=Makefile,line=1,endLine=1,title=Makefile not found::Makefile not found"
+              exit 1
+          fi
+      - name: clean
+        run: |
+          if [[ -f ./Makefile ]]; then
+              make clean
+              exit 0
+          else
+              echo "::error file=Makefile,line=1,endLine=1,title=Makefile not found::Makefile not found"
+              exit 1
+          fi
+      # - name: exec
+      #   run: |
+      #     IFS = ','
+      #     read -a array <<< "$EXECUTABLE"
+      #     for val in "${strarr[@]}"; do
+      #         if find ./ \( -name $val \) -exec false {} +; then
+      #             echo "$val not found"
+      #             exit 1
+      #         else
+      #           echo "$val found"
+      #           exit 0
+      #         fi
+
+  run_tests:
+    needs : checking_the_repository_cleanliness
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    container: epitechcontent/epitest-docker
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: tests_run
+        run: |
+          if [[ -f ./Makefile ]]; then
+            make tests_run
+            exit 0
+          else
+            echo "::error file=Makefile,line=1,endLine=1,title=Makefile not found::Makefile not found"
+            exit 1
+          fi
+  push_to_mirror:
+    needs: [check_program_compilation, run_tests]
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - uses: pixta-dev/repository-mirroring-action@v1
         with:
-          target_repo_url: ${{ env.MIRROR_URL }}
-          ssh_private_key: ${{ secrets.GIT_SSH_PRIVATE_KEY }}
+          target_repo_url:
+            ${{ env.MIROR_URL }}
+          ssh_private_key:
+            ${{ secrets.GIT_SSH_PRIVATE_KEY }}
