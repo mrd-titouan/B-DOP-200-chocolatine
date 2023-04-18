@@ -9,8 +9,7 @@ on:
       - 'ga-ignore-**'
 
 env:
-  MIROR_URL : git@github.com:EpitechPromo2027/B-
-DOP-200-NCE-2-1-chocolatine-titouan.morandi.git
+  MIROR_URL : git@github.com:EpitechPromo2027/B-DOP-200-NCE-2-1-chocolatine-titouan.morandi.git
 
 jobs:
   push_to_mirror:
@@ -20,9 +19,7 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth:  0
-      - uses: pixta-dev/repository-mirroring-
-action@v1
+      - uses: pixta-dev/repository-mirroring-action@v1
         with:
           target_repo_url: ${{ env.MIRROR_URL }}
-          ssh_private_key: ${{
-secrets.GIT_SSH_PRIVATE_KEY }}
+          ssh_private_key: ${{ secrets.GIT_SSH_PRIVATE_KEY }}
