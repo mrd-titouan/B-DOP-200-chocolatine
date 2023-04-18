@@ -31,7 +31,6 @@ jobs:
               done
                   exit 1
           fi
-
   check_program_compilation:
     needs:  check_coding_style
     permissions:
@@ -60,6 +59,7 @@ jobs:
               echo "::error file=Makefile,line=1,endLine=1,title=Makefile not found::Makefile not found"
               exit 1
           fi
+
   run_tests:
     needs :  check_coding_style
     permissions:
